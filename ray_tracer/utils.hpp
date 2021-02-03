@@ -6,21 +6,20 @@
 #define M_PI 3.1415926535897932384626433832795
 #define INF 0x3f3f3f
 #define eps 1e-6
+#define E_MATH 2.71828
 
 typedef double ld;
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 using namespace std;
 
-#ifndef __STB_IMAGE_H__
-#define __STB_IMAGE_H__
+#ifndef STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #endif
 
 enum Refl_t { DIFF, SPEC, REFR };  // material types, used in radiance()
 double erand48(ushort seed[3]){return (ld)rand()/(ld)RAND_MAX;}
-
-
 
 inline double clamp(double x){ return x<0?0:x>1?1:x;}
 inline int toInt(double x){ return int(pow(clamp(x),1/2.2)*255+.5); }
@@ -54,8 +53,12 @@ struct Vec {
     Vec max(const Vec&a) const{return Vec(std::max(x,a.x),std::max(y,a.y),std::max(z,a.z));}
     Vec min(const Vec&a) const{return Vec(std::min(x,a.x),std::min(y,a.y),std::min(z,a.z));}
     Vec clamp() {return Vec(x<0?0:x>1?1:x,y<0?0:y>1?1:y,z<0?0:z>1?1:z);}
+    Vec reflect(const Vec&n)const {
+        return (*this)-n*2*dot(n);
+    }
     void print() const{
         std::cout<<x<<" "<<y<<" "<<z<<" "<<std::endl;
     }
 };
+
 #endif

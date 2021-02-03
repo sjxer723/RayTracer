@@ -14,38 +14,29 @@ public:
     Texture texture;
     Object(Texture t_):texture(t_){}
     Object(std::string _,ld b_,Vec c_,Vec e_,Refl_t r_):texture(_,b_,c_,e_,r_){}
-    virtual ld intersect(Ray r){puts("virtual error in intersect!");}
+    virtual ld intersect(Ray){puts("virtual error in intersect!");}
+    virtual Vec norm(Vec){puts("virtual in norm!");}
 };
 class Sphere_object :public Object{
+public:
     ld rad;
     Vec p;
-    Sphere_object(ld rad_,Vec p_,std::string _, ld b_, Vec c_,Vec e_,Refl_t r_):
-        rad(rad_),p(p_),Object(_,b_,c_,e_,r_){}
-    ld intersect(Ray r) const { // returns distance, 0 if nohit
+    Sphere_object(ld r_,Vec o_, Refl_t refl, ld brdf = 1.5, Vec color = Vec(), Vec e_ = Vec(), std::string s_ = ""):
+		rad(r_),p(o_),Object(s_, brdf, color, e_,refl) {}
+    virtual ld intersect(Ray r) { // returns distance, 0 if nohit
         Vec op=p-r.o; // Solve t^2*d.d + 2*t*(o-p).d + (o-p).(o-p)-R^2 = 0
         ld t,b=op.dot(r.d),det=b*b-op.dot(op)+rad*rad;
         if (det<0) return 0; else det=sqrt(det);
         return (t=b-det)>eps?t:((t=b+det)>eps?t:0);
     }
+    virtual Vec norm(Vec x) { return (x-p).norm();}
 };
-struct Sphere {
-    ld rad;
-    Vec p,e,c;
-    Refl_t refl;
-    Sphere(double rad_, Vec p_, Vec e_, Vec c_, Refl_t refl_):
-        rad(rad_), p(p_), e(e_), c(c_), refl(refl_) {}
-    ld intersect(Ray r) const { // returns distance, 0 if nohit
-        Vec op=p-r.o; // Solve t^2*d.d + 2*t*(o-p).d + (o-p).(o-p)-R^2 = 0
-        ld t,b=op.dot(r.d),det=b*b-op.dot(op)+rad*rad;
-        if (det<0) return 0; else det=sqrt(det);
-        return (t=b-det)>eps?t:((t=b+det)>eps?t:0);
-    }
-};
-struct Cube {
+class Cube_object:public Object{
+public:
     Vec m0,m1;
-    Refl_t refl;
-    Cube(Vec m0_,Vec m1_,Refl_t refl_):m0(m0_),m1(m1_),refl(refl_){}
-    ld intersect(Ray r) const{
+    Cube_object(Vec m0_,Vec m1_, Refl_t refl, ld brdf = 1.5, Vec color = Vec(), Vec e_ = Vec(), std::string s_ = ""):
+		m0(m0_),m1(m1_),Object(s_, brdf, color, e_,refl) {}
+    virtual ld intersect(Ray r) {
         ld ft=INF,t;
         Vec fq=Vec(),q;
         // x dir
@@ -89,29 +80,26 @@ struct Cube {
         }
         return ft;
     }
+    virtual Vec norm(Vec p) {
+		if (std::abs(p.x - m0.x) < eps || std::abs(p.x - m1.x) < eps)
+			return Vec(std::abs(p.x - m1.x) < eps ? 1 : -1, 0, 0);
+		if (std::abs(p.y - m0.y) < eps || std::abs(p.y - m1.y) < eps)
+			return Vec(0, std::abs(p.y - m1.y) < eps ? 1 : -1, 0);
+		if (std::abs(p.z - m0.z) < eps || std::abs(p.z - m1.z) < eps)
+			return Vec(0, 0, std::abs(p.z - m1.z) < eps ? 1 : -1);
+		assert(1 == 0);
+	}
 };
-struct Plane { //store ax+by+cz=1 n=(a,b,c)
+class Plane_object: public Object { //store ax+by+cz=1 n=(a,b,c)
+public:
     Vec n,n0;
-    Refl_t refl;
-    Plane(Vec n_,Vec n0_,Refl_t refl_):n(n_),n0(n0_),refl(refl_){}
-    ld intersect(Ray r)const{
+    Plane_object(Vec n_,Vec n0_, Refl_t refl, ld brdf = 1.5, Vec color = Vec(), Vec e_ = Vec(), std::string s_ = ""):
+		n(n_),n0(n0_),Object(s_, brdf, color, e_,refl) {}
+    ld intersect(Ray r) {
         ld t=(1-r.o.dot(n))/(r.d.dot(n));
         if (t<eps) return INF; // parallel case
         return t;
     }
+};
 
-};
-//Texture: Texture t1=Texture();
-////Scene: radius, position, emission, color, material, texture
-Sphere spheres[] = {
-  Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left
-  Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),//Rght
-  Sphere(1e5, Vec(50,40.8, 1e5),     Vec(),Vec(.75,.75,.75),DIFF),//Back
-  Sphere(1e5, Vec(50,40.8,-1e5+170), Vec(),Vec(),           DIFF),//Frnt
-  Sphere(1e5, Vec(50, 1e5, 81.6),    Vec(),Vec(.75,.75,.75),DIFF),//Botm
-  Sphere(1e5, Vec(50,-1e5+81.6,81.6),Vec(),Vec(.75,.75,.75),DIFF),//Top
-  Sphere(16.5,Vec(27,16.5,47),       Vec(),Vec(1,1,1)*.999, SPEC),//Mirr
-  Sphere(16.5,Vec(73,16.5,78),       Vec(),Vec(1,1,1)*.999, REFR),//Glas
-  Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF) //Lite
-};
 #endif
