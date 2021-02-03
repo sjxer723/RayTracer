@@ -5,3 +5,4 @@
   ## 
 # Update log
   By Feb 2: 理解并重写了smallpt，并加入了纹理映射。
+  By Feb 3: 增添了`雾`效果,贴图部分还存在bug。
